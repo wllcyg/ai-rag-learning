@@ -90,7 +90,7 @@ services:
     restart: always
     command: tunnel --no-autoupdate run
     environment:
-      - TUNNEL_TOKEN=eyJhIjoiYmFjNGMyNmZhMDU2OGY4ZGI1YTdiMTZlODIzNWM3NGUiLCJ0IjoiMWFlZmMwYmUtYzEzNS00MzIzLWI1NWItNjQ3ZjZjNjlmZjM2IiwicyI6Ik9XSmlaakJrTURJdFltVXlOQzAwTmpFeUxUbGhZakF0TnpnM1pEZzFPRFZsT0dFeCJ9
+      - TUNNEL_TOKEN=${CLOUDFLARED_TUNNEL_TOKEN}
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
