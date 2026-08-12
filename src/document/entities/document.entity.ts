@@ -23,6 +23,15 @@ export class DocumentEntity {
   @Column({ name: 'content_id', type: 'varchar', unique: true })
   contentId: string;
 
+  @Column({ name: 'file_url', type: 'varchar', nullable: true })
+  fileUrl?: string;
+
+  @Column({ name: 'file_size', type: 'bigint', nullable: true })
+  fileSize?: number;
+
+  @Column({ name: 'file_type', type: 'varchar', nullable: true })
+  fileType?: string;
+
   @Column({ type: 'varchar', nullable: true })
   summary?: string;
 

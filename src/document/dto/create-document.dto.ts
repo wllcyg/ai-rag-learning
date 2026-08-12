@@ -1,4 +1,4 @@
-import { IsBoolean, IsEnum, IsOptional, IsString } from 'class-validator';
+import { IsBoolean, IsEnum, IsNumber, IsOptional, IsString } from 'class-validator';
 import { DocumentStatus } from '../entities/document.entity';
 
 /** 创建文档 */
@@ -10,6 +10,21 @@ export class CreateDocumentDto {
   /** Markdown 正文 */
   @IsString()
   content: string;
+
+  /** 原始文件在 R2 上的公开 URL */
+  @IsOptional()
+  @IsString()
+  fileUrl?: string;
+
+  /** 原始文件大小 (字节) */
+  @IsOptional()
+  @IsNumber()
+  fileSize?: number;
+
+  /** 原始文件扩展名/类型 (如 pdf, docx) */
+  @IsOptional()
+  @IsString()
+  fileType?: string;
 
   /** 摘要 */
   @IsOptional()
