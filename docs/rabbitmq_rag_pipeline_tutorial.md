@@ -81,10 +81,10 @@ RabbitMQ 是基于 **AMQP（Advanced Message Queuing Protocol，高级消息队�
 [Consumer 消费者]  <───拉取/推送消息 (带 ACK)──── [Queue 队列]
 ```
 
-* **Producer（生产者）**：产生并向 RabbitMQ 发送消息的应用程序（如本系统的 [`DocumentPipelinePublisher`](../src/mq/document-pipeline.publisher.ts)）。
+* **Producer（生产者）**：产生并向 RabbitMQ 发送消息的应用程序（如本系统的 [`DocumentPipelinePublisher`](https://github.com/wllcyg/ai-rag-learning/blob/main/src/mq/document-pipeline.publisher.ts)）。
 * **Exchange（交换机）**：负责接收生产者的消息，并根据**路由规则（Binding 绑定关系与 Routing Key 路由键）**将消息分发到对应的队列中。
 * **Queue（队列）**：实际存储消息的缓冲区，消费者直接从队列中监听并取出消息。
-* **Consumer（消费者）**：连接到队列并处理消息的应用程序（如本系统的 [`DocumentPipelineConsumer`](../src/mq/document-pipeline.consumer.ts)）。
+* **Consumer（消费者）**：连接到队列并处理消息的应用程序（如本系统的 [`DocumentPipelineConsumer`](https://github.com/wllcyg/ai-rag-learning/blob/main/src/mq/document-pipeline.consumer.ts)）。
 * **Routing Key（路由键）**：生产者发送消息时附带的“标签”（类似于邮件上的邮政编码）。
 * **Binding（绑定）**：交换机与队列之间的关联关系（类似于“把某个邮编的信件投放到对应邮箱”）。
 
@@ -185,7 +185,7 @@ src/mq/
 
 ### 1. 拓扑常量与消息载荷契约
 
-#### [`src/mq/mq.constants.ts`](../src/mq/mq.constants.ts)
+#### [`src/mq/mq.constants.ts`](https://github.com/wllcyg/ai-rag-learning/blob/main/src/mq/mq.constants.ts)
 ```typescript
 /** RAG 重建索引交换机（topic） */
 export const RAG_REINDEX_EXCHANGE = 'rag.reindex.exchange';
@@ -197,7 +197,7 @@ export const RAG_REINDEX_QUEUE = 'kh.rag.reindex.queue';
 export const RAG_RK_BY_IDS = 'rag.reindex.by_ids';
 ```
 
-#### [`src/mq/messages/pipeline.messages.ts`](../src/mq/messages/pipeline.messages.ts)
+#### [`src/mq/messages/pipeline.messages.ts`](https://github.com/wllcyg/ai-rag-learning/blob/main/src/mq/messages/pipeline.messages.ts)
 ```typescript
 export type ReindexType = 'BY_DOC_IDS';
 
@@ -216,7 +216,7 @@ export interface ReindexMessage {
 
 ### 2. 底层连接与驱动服务 (`RabbitMqService`)
 
-[`src/mq/rabbitmq.service.ts`](../src/mq/rabbitmq.service.ts) 是最核心的底层引擎：
+[`src/mq/rabbitmq.service.ts`](https://github.com/wllcyg/ai-rag-learning/blob/main/src/mq/rabbitmq.service.ts) 是最核心的底层引擎：
 
 ```typescript
 @Injectable()
@@ -293,7 +293,7 @@ export class RabbitMqService implements OnModuleInit, OnModuleDestroy {
 
 ### 3. 生产者投递 (`DocumentPipelinePublisher`)
 
-[`src/mq/document-pipeline.publisher.ts`](../src/mq/document-pipeline.publisher.ts)：
+[`src/mq/document-pipeline.publisher.ts`](https://github.com/wllcyg/ai-rag-learning/blob/main/src/mq/document-pipeline.publisher.ts)：
 
 ```typescript
 @Injectable()
@@ -322,7 +322,7 @@ export class DocumentPipelinePublisher {
 
 ### 4. 消费者监听 (`DocumentPipelineConsumer`)
 
-[`src/mq/document-pipeline.consumer.ts`](../src/mq/document-pipeline.consumer.ts)：
+[`src/mq/document-pipeline.consumer.ts`](https://github.com/wllcyg/ai-rag-learning/blob/main/src/mq/document-pipeline.consumer.ts)：
 
 ```typescript
 @Injectable()
@@ -362,7 +362,7 @@ export class DocumentPipelineConsumer {
 
 ## 🎯 总结与后续步骤
 
-到目前为止，整个异步消息队列骨架已经完整闭环。下一阶段的核心工作为实现 **[`PipelineOrchestrator`](../src/pipeline/pipeline.orchestrator.ts)** 中的 **RAG 核心管线**：
+到目前为止，整个异步消息队列骨架已经完整闭环。下一阶段的核心工作为实现 **[`PipelineOrchestrator`](https://github.com/wllcyg/ai-rag-learning/blob/main/src/pipeline/pipeline.orchestrator.ts)** 中的 **RAG 核心管线**：
 1. **文本智能分块服务（Chunking Service）**
 2. **Embedding 向量化服务（接入大模型）**
 3. **Elasticsearch 倒排索引 + pgvector 向量索引写入**

@@ -118,7 +118,7 @@ flowchart TD
 ## 四、核心处理链路五步深度拆解
 
 ### Step 1：RabbitMQ 异步发牌与拓扑解耦
-* **文件路径**：[`src/mq/rabbitmq.service.ts`](../src/mq/rabbitmq.service.ts)
+* **文件路径**：[`src/mq/rabbitmq.service.ts`](https://github.com/wllcyg/ai-rag-learning/blob/main/src/mq/rabbitmq.service.ts)
 * **设计意图**：
   * 大模型抽取实体需要调用 LLM API，耗时在数秒到十数秒，**绝对不能阻塞用户的文档发布 HTTP 请求**；
   * 将 RAG 向量化、ES 全文索引与 KG 图谱构建声明为 **3 个独立交换机与独立队列**，互不干扰，支持独立扩缩容与失败隔离。
@@ -134,7 +134,7 @@ await ch.bindQueue('kh.kg.graph.queue', 'kg.graph.exchange', 'kg.graph.delete');
 ---
 
 ### Step 2：编排调度与 Claim Check 模式
-* **文件路径**：[`src/pipeline/pipeline.orchestrator.ts`](../src/pipeline/pipeline.orchestrator.ts)
+* **文件路径**：[`src/pipeline/pipeline.orchestrator.ts`](https://github.com/wllcyg/ai-rag-learning/blob/main/src/pipeline/pipeline.orchestrator.ts)
 * **设计意图**：
   * MQ 消息体仅传递轻量 ID（`< 150 bytes`）：`{ taskId, type: 'BUILD_BY_DOC_IDS', documentIds: ['...'] }`；
   * 编排器收到通知后，从 MongoDB 实时查取 100% 完整正文，既杜绝 RabbitMQ 内存压力，又保证抽取算法拿到最完整语料。
@@ -142,7 +142,7 @@ await ch.bindQueue('kh.kg.graph.queue', 'kg.graph.exchange', 'kg.graph.delete');
 ---
 
 ### Step 3：带上下文感知（Heading）的 Markdown 语义分块
-* **文件路径**：[`src/pipeline/chunking.service.ts`](../src/pipeline/chunking.service.ts)
+* **文件路径**：[`src/pipeline/chunking.service.ts`](https://github.com/wllcyg/ai-rag-learning/blob/main/src/pipeline/chunking.service.ts)
 * **核心难题**：长文档如果切成小块送给大模型，后面的段落往往缺少上下文（例如一段只有“负责日常巡检与发布”，LLM 不知道是谁负责什么）。
 * **解决方案**：
   * 切块器自动推断上级 Markdown ATX 标题（如 `## 项目二 · Book Chat 书籍 RAG 系统`）；
@@ -152,8 +152,8 @@ await ch.bindQueue('kh.kg.graph.queue', 'kg.graph.exchange', 'kg.graph.delete');
 
 ### Step 4：LLM 结构化三元组抽取与幻觉清洗
 * **文件路径**：
-  * [`src/pipeline/kg-extraction.schema.ts`](../src/pipeline/kg-extraction.schema.ts)
-  * [`src/pipeline/extraction.service.ts`](../src/pipeline/extraction.service.ts)
+  * [`src/pipeline/kg-extraction.schema.ts`](https://github.com/wllcyg/ai-rag-learning/blob/main/src/pipeline/kg-extraction.schema.ts)
+  * [`src/pipeline/extraction.service.ts`](https://github.com/wllcyg/ai-rag-learning/blob/main/src/pipeline/extraction.service.ts)
 * **实现技术**：采用 `@langchain/openai` 的 `ChatOpenAI.withStructuredOutput(kgExtractionResultSchema, { method: 'jsonMode' })`，强约束输出 Zod Schema。
 
 #### 1. 10 大标准实体分类
@@ -184,7 +184,7 @@ for (const r of (parsed.relations ?? []).slice(0, this.maxRelations)) {
 ---
 
 ### Step 5：Neo4j 幂等落库与孤儿实体自动垃圾回收
-* **文件路径**：[`src/pipeline/graph-build.service.ts`](../src/pipeline/graph-build.service.ts)
+* **文件路径**：[`src/pipeline/graph-build.service.ts`](https://github.com/wllcyg/ai-rag-learning/blob/main/src/pipeline/graph-build.service.ts)
 
 #### ① 幂等重建机制（Clear Before Build）
 每次文档重新发布时，先清理该文档原有的节点和块关联，防止重复发布造成实体关系边数量指数级翻倍：

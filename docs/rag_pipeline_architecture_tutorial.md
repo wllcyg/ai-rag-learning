@@ -79,7 +79,7 @@ flowchart TD
 
 ## 二、 核心数据模型契约 (`pipeline.types.ts`)
 
-在 [`src/pipeline/pipeline.types.ts`](../src/pipeline/pipeline.types.ts) 中定义了管线流转的标准数据结构：
+在 [`src/pipeline/pipeline.types.ts`](https://github.com/wllcyg/ai-rag-learning/blob/main/src/pipeline/pipeline.types.ts) 中定义了管线流转的标准数据结构：
 
 ### 1. 文档聚合快照 (`PipelineDocument`)
 ```typescript
@@ -133,7 +133,7 @@ export interface DocumentChunk {
 
 ## 三、 智能分块服务 (`ChunkingService`)
 
-文件位置：[`src/pipeline/chunking.service.ts`](../src/pipeline/chunking.service.ts)
+文件位置：[`src/pipeline/chunking.service.ts`](https://github.com/wllcyg/ai-rag-learning/blob/main/src/pipeline/chunking.service.ts)
 
 ### 1. 为什么要分块？
 * **Embedding 模型输入长度有限**（超出最大 token 上限会被直接截断丢失信息）。
@@ -186,7 +186,7 @@ chunkId: createHash('sha256')
 
 ## 四、 向量化计算服务 (`EmbeddingService`)
 
-文件位置：[`src/pipeline/embedding.service.ts`](../src/pipeline/embedding.service.ts)
+文件位置：[`src/pipeline/embedding.service.ts`](https://github.com/wllcyg/ai-rag-learning/blob/main/src/pipeline/embedding.service.ts)
 
 ### 1. 多模型提供商适配
 * 基于 `@langchain/openai` 的 `OpenAIEmbeddings` 封装。
@@ -208,7 +208,7 @@ chunkId: createHash('sha256')
 
 ## 五、 向量索引存储服务 (`VectorIndexService`)
 
-文件位置：[`src/pipeline/vector-index.service.ts`](../src/pipeline/vector-index.service.ts)
+文件位置：[`src/pipeline/vector-index.service.ts`](https://github.com/wllcyg/ai-rag-learning/blob/main/src/pipeline/vector-index.service.ts)
 
 ### 1. 自动初始化 Elasticsearch Mapping (`kh_chunk`)
 启动时调用 `createIndexIfNotExists()`，自动创建索引 Mapping：
@@ -263,7 +263,7 @@ await this.es.bulk({ refresh: true, operations });
 
 ## 六、 知识管线总编排器 (`PipelineOrchestrator`)
 
-文件位置：[`src/pipeline/pipeline.orchestrator.ts`](../src/pipeline/pipeline.orchestrator.ts)
+文件位置：[`src/pipeline/pipeline.orchestrator.ts`](https://github.com/wllcyg/ai-rag-learning/blob/main/src/pipeline/pipeline.orchestrator.ts)
 
 ### 1. 为什么需要总编排器？
 * **职责解耦**：MQ 消费者只管收发消息，不负责复杂业务逻辑；
