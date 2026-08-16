@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import { InjectEntityManager } from '@nestjs/typeorm';
 import { InjectModel } from '@nestjs/mongoose';
@@ -19,6 +20,7 @@ import {
   DocumentContent,
   DocumentContentDocument,
 } from './schemas/document-content.schema';
+import { DocumentPipelinePublisher } from '../mq/document-pipeline.publisher';
 
 /**
  * 文档服务
@@ -28,6 +30,8 @@ import {
  */
 @Injectable()
 export class DocumentService {
+  private readonly logger = new Logger(DocumentService.name);
+
   constructor(
     /** Postgres 实体管理器 */
     @InjectEntityManager()
@@ -35,6 +39,8 @@ export class DocumentService {
     /** Mongo 正文模型 */
     @InjectModel(DocumentContent.name)
     private readonly contentModel: Model<DocumentContentDocument>,
+    /** MQ 发布者 */
+    private readonly pipelinePublisher: DocumentPipelinePublisher,
   ) {}
 
   /**
@@ -235,6 +241,54 @@ export class DocumentService {
   }
 
   /**
+   * 直接发布文档（不做审核）
+   *
+   * 流程：
+   * 1. 校验文档存在且状态为草稿 / 已发布
+   * 2. 写库：status=Published，刷新 publishTime
+   * 3. 读 Mongo 正文，为后续异步管线（向量化 / ES 索引）投递准备
+   */
+  async publish(id: string) {
+    this.logger.log(`发布文档：documentId=${id}`);
+
+    const doc = await this.em.findOne(DocumentEntity, {
+      where: { id, deleted: false },
+    });
+    if (!doc) {
+      throw new NotFoundException(`Document ${id} not found`);
+    }
+
+    // 仅草稿 / 已发布可发布（已发布再次发布会触发重新发布/重建索引）
+    if (
+      doc.status !== DocumentStatus.Draft &&
+      doc.status !== DocumentStatus.Published
+    ) {
+      throw new BadRequestException('当前文档状态不允许发布');
+    }
+
+    doc.status = DocumentStatus.Published;
+    doc.publishTime = new Date();
+    const saved = await this.em.save(doc);
+
+    const contentDoc = await this.contentModel
+      .findOne({ _id: doc.contentId, deleted: false })
+      .lean();
+    const content = contentDoc?.content ?? '';
+
+    this.logger.log(`文档发布成功：documentId=${id}`);
+
+    // 投递 RabbitMQ 异步管线（向量化 / ES 索引）
+    try {
+      await this.pipelinePublisher.afterPublish(saved);
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      this.logger.warn(`[MQ 投递失败（不影响发布成功）] documentId=${id}, error=${msg}`);
+    }
+
+    return Object.assign({}, saved, { content });
+  }
+
+  /**
    * 软删除文档
    * Postgres、Mongo 两侧都将 deleted 置为 true（不物理删正文）
    */
@@ -252,6 +306,7 @@ export class DocumentService {
       { _id: doc.contentId },
       { $set: { deleted: true } },
     );
+
     return { id, deleted: true };
   }
 

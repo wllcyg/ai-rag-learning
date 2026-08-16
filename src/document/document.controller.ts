@@ -142,4 +142,9 @@ export class DocumentController {
   remove(@Param('id') id: string) {
     return this.documentService.remove(id);
   }
+
+  @Post(':id/publish')
+  publish(@Param('id') id: string) {
+    return this.documentService.publish(id);
+  }
 }
