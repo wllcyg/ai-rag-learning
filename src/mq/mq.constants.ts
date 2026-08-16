@@ -1,20 +1,38 @@
 /**
  * RabbitMQ 拓扑常量
  *
- * 交换机：rag.reindex
- * 队列名带 `kh.` 前缀，避免和本机同时跑的其他项目冲突。
+ * 队列名统一带 `kh.` 前缀，避免和本机同时跑的其他项目冲突。
  */
+
+// ============================================================================
+// 1. RAG 知识切片与向量化管线 (面向 AI 问答 / kh_chunk 索引)
+// ============================================================================
 
 /** RAG 重建索引交换机（topic） */
 export const RAG_REINDEX_EXCHANGE = 'rag.reindex.exchange';
 
-/** 本服务消费的队列 */
+/** RAG 消费者消费的队列 */
 export const RAG_REINDEX_QUEUE = 'kh.rag.reindex.queue';
 
-/** 路由键：按文档 ID 重建 */
+/** 路由键：按文档 ID 切片与向量化重建 */
 export const RAG_RK_BY_IDS = 'rag.reindex.by_ids';
 
-/** 重建索引消息载荷接口 */
-export interface ReindexPayload {
-  documentIds: string[];
-}
+/** 路由键：删除文档全部向量切片 */
+export const RAG_RK_DELETE = 'rag.reindex.delete';
+
+
+// ============================================================================
+// 2. 文档级全文检索管线 (面向前台搜索框 / kh_document 索引)
+// ============================================================================
+
+/** 文档级搜索索引交换机（topic） */
+export const SEARCH_INDEX_EXCHANGE = 'search.index.exchange';
+
+/** 文档搜索消费者消费的队列 */
+export const SEARCH_INDEX_QUEUE = 'kh.search.index.queue';
+
+/** 路由键：文档创建 / 更新 / 发布时建立搜索索引 */
+export const SEARCH_RK_INDEX = 'search.index.document';
+
+/** 路由键：文档删除 / 下架时从搜索索引中移除 */
+export const SEARCH_RK_DELETE = 'search.index.delete';

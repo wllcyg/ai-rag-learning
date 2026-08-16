@@ -10,6 +10,7 @@ import {
 } from '../document/schemas/document-content.schema';
 import { ChunkingService } from './chunking.service';
 import { EmbeddingService } from './embedding.service';
+import { SearchIndexService } from './search-index.service';
 import { VectorIndexService } from './vector-index.service';
 import { PipelineDocument } from './pipeline.types';
 
@@ -17,6 +18,7 @@ import { PipelineDocument } from './pipeline.types';
  * 发布后知识管线编排器
  *
  * <p>RAG：分块 → Embedding → ES kh_chunk</p>
+ * <p>Search：整篇快照 → ES kh_document（Claim Check 模式从 Mongo 查全量正文）</p>
  *
  * <p>由 {@link DocumentPipelineConsumer} 在消费到 MQ 消息后调用；</p>
  * <p>本类负责「加载文档 → 调具体服务」，不直接碰 RabbitMQ。</p>
@@ -33,14 +35,22 @@ export class PipelineOrchestrator {
     private readonly chunkingService: ChunkingService,
     private readonly embeddingService: EmbeddingService,
     private readonly vectorIndexService: VectorIndexService,
+    private readonly searchIndexService: SearchIndexService,
   ) {}
 
   /**
-   * 处理 RAG 重建消息。
+   * 处理 RAG 重建 / 删除消息。
    *
    * 重建流水线（单文档）：清旧块 → Chunking → Embedding → 写入 ES kh_chunk
    */
   async handleRagReindex(type: string, documentIds?: string[]) {
+    if (type === 'DELETE_BY_DOC_IDS' && documentIds?.length) {
+      for (const id of documentIds) {
+        await this.vectorIndexService.deleteByDocId(id);
+      }
+      return;
+    }
+
     if (type !== 'BY_DOC_IDS' || !documentIds?.length) {
       this.logger.warn(`忽略未支持的 RAG 消息：type=${type}`);
       return;
@@ -57,6 +67,32 @@ export class PipelineOrchestrator {
         this.logger.error(`RAG 索引失败：documentId=${doc.id}, ${message}`);
       }
     }
+  }
+
+  /**
+   * 处理 Search 索引消息。
+   * INDEX：通过 documentId 从 Postgres+Mongo 加载全量文档（包含 100% 正文），写入 ES kh_document。
+   * DELETE：按 documentId 从 ES kh_document 删除。
+   */
+  async handleSearchIndex(type: string, documentId: string) {
+    if (type === 'DELETE') {
+      await this.searchIndexService.deleteDocument(documentId);
+      return;
+    }
+
+    if (type === 'INDEX') {
+      const [doc] = await this.loadDocumentsByIds([documentId]);
+      if (!doc) {
+        this.logger.warn(
+          `Search INDEX 未找到对应文档：documentId=${documentId}`,
+        );
+        return;
+      }
+      await this.searchIndexService.indexDocument(this.toSearchIndexDoc(doc));
+      return;
+    }
+
+    this.logger.warn(`忽略未支持的 Search 消息：type=${type}`);
   }
 
   /** 单篇：分块 → 批量嵌入 → 落库 */
@@ -143,6 +179,27 @@ export class PipelineOrchestrator {
       publishTime: doc.publishTime,
       createdAt: doc.createdAt,
       updatedAt: doc.updatedAt,
+    };
+  }
+
+  /** 管线 DTO 转换为 ES kh_document 写入结构（含全量正文与 ISO 时间戳） */
+  private toSearchIndexDoc(doc: PipelineDocument): Record<string, unknown> {
+    return {
+      id: doc.id,
+      title: doc.title,
+      summary: doc.summary ?? null,
+      content: doc.content ?? null, // 🌟 100% 全量正文分词
+      categoryId: doc.categoryId ?? null,
+      tags: doc.tags ?? null,
+      status: doc.status,
+      isPublic: doc.isPublic,
+      viewCount: doc.viewCount,
+      likeCount: doc.likeCount,
+      commentCount: doc.commentCount,
+      authorId: doc.authorId ?? null,
+      publishTime: this.toIsoDate(doc.publishTime),
+      createdAt: this.toIsoDate(doc.createdAt),
+      updatedAt: this.toIsoDate(doc.updatedAt),
     };
   }
 }

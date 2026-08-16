@@ -8,6 +8,7 @@ import { PipelineOrchestrator } from './pipeline.orchestrator';
 import { ChunkingService } from './chunking.service';
 import { EmbeddingService } from './embedding.service';
 import { VectorIndexService } from './vector-index.service';
+import { SearchIndexService } from './search-index.service';
 
 @Global()
 @Module({
@@ -21,12 +22,14 @@ import { VectorIndexService } from './vector-index.service';
     ChunkingService,
     EmbeddingService,
     VectorIndexService,
+    SearchIndexService,
   ],
   exports: [
     PipelineOrchestrator,
     ChunkingService,
     EmbeddingService,
     VectorIndexService,
+    SearchIndexService,
   ],
 })
 export class PipelineModule {}

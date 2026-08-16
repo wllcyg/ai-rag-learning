@@ -307,6 +307,14 @@ export class DocumentService {
       { $set: { deleted: true } },
     );
 
+    // 异步通知 ES 搜索与 RAG 向量索引下架
+    try {
+      await this.pipelinePublisher.afterUnpublish(id);
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      this.logger.warn(`[MQ 下架投递失败] documentId=${id}, error=${msg}`);
+    }
+
     return { id, deleted: true };
   }
 

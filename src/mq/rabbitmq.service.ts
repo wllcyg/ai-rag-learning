@@ -14,6 +14,11 @@ import {
   RAG_REINDEX_EXCHANGE,
   RAG_REINDEX_QUEUE,
   RAG_RK_BY_IDS,
+  RAG_RK_DELETE,
+  SEARCH_INDEX_EXCHANGE,
+  SEARCH_INDEX_QUEUE,
+  SEARCH_RK_DELETE,
+  SEARCH_RK_INDEX,
 } from './mq.constants';
 
 export type MessageHandler = (msg: ConsumeMessage) => Promise<void> | void;
@@ -41,10 +46,10 @@ export class RabbitMqService implements OnModuleInit, OnModuleDestroy {
       return;
     }
 
-    const url =
-      this.config.get<string>('RABBITMQ_URL') ||
-      this.config.get<string>('RABBITMQ_URI') ||
-      'amqp://guest:guest@localhost:5672';
+    const url = this.config.get<string>(
+      'RABBITMQ_URL',
+      'amqp://guest:guest@localhost:5672',
+    );
     const safeUrl = this.redactAmqpUrl(url);
     const timeoutMs = Number(
       this.config.get<string>('RABBITMQ_CONNECT_TIMEOUT_MS', '15000'),
@@ -96,7 +101,11 @@ export class RabbitMqService implements OnModuleInit, OnModuleDestroy {
       this.logger.log('RabbitMQ channel 就绪');
     } catch (error) {
       const message = this.errorMessage(error);
-      this.logger.warn(`RabbitMQ 异步连接中（启动未阻塞）：${message}`);
+      this.logger.error(`RabbitMQ 初始化失败：${message}`);
+      await this.connection.close().catch(() => undefined);
+      this.connection = null;
+      this.channel = null;
+      throw error;
     }
   }
 
@@ -159,8 +168,22 @@ export class RabbitMqService implements OnModuleInit, OnModuleDestroy {
     await ch.assertExchange(RAG_REINDEX_EXCHANGE, 'topic', { durable: true });
     await ch.assertQueue(RAG_REINDEX_QUEUE, { durable: true });
     await ch.bindQueue(RAG_REINDEX_QUEUE, RAG_REINDEX_EXCHANGE, RAG_RK_BY_IDS);
+    await ch.bindQueue(RAG_REINDEX_QUEUE, RAG_REINDEX_EXCHANGE, RAG_RK_DELETE);
 
-    this.logger.log('RabbitMQ 拓扑已声明（RAG）');
+    await ch.assertExchange(SEARCH_INDEX_EXCHANGE, 'topic', { durable: true });
+    await ch.assertQueue(SEARCH_INDEX_QUEUE, { durable: true });
+    await ch.bindQueue(
+      SEARCH_INDEX_QUEUE,
+      SEARCH_INDEX_EXCHANGE,
+      SEARCH_RK_INDEX,
+    );
+    await ch.bindQueue(
+      SEARCH_INDEX_QUEUE,
+      SEARCH_INDEX_EXCHANGE,
+      SEARCH_RK_DELETE,
+    );
+
+    this.logger.log('RabbitMQ 拓扑已声明（RAG + Search）');
   }
 
   private async bindConsumers(ch: ConfirmChannel) {
