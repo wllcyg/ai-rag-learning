@@ -38,6 +38,7 @@ pnpm run start:dev
 | **RabbitMQ 控制台** | [http://localhost:15672](http://localhost:15672) | 账号：`guest` / 密码：`guest` |
 | **Elasticsearch (包含 IK 分词)** | [http://localhost:9200](http://localhost:9200) | 免密访问（端口：`9200`） |
 | **Kibana 控制面板** | [http://localhost:5601](http://localhost:5601) | ES 可视化调试面板（端口：`5601`） |
+| **Neo4j 知识图谱控制台** | [http://localhost:7474](http://localhost:7474) | 账号：`neo4j` / 密码：`12345678` (Bolt: `7687`) |
 
 ---
 

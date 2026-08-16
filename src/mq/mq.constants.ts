@@ -36,3 +36,20 @@ export const SEARCH_RK_INDEX = 'search.index.document';
 
 /** 路由键：文档删除 / 下架时从搜索索引中移除 */
 export const SEARCH_RK_DELETE = 'search.index.delete';
+
+
+// ============================================================================
+// 3. KG 知识图谱构建管线 (面向实体多跳问答 / Neo4j 实体关系网络)
+// ============================================================================
+
+/** KG 知识图谱构建交换机（topic） */
+export const KG_GRAPH_EXCHANGE = 'kg.graph.exchange';
+
+/** KG 知识图谱消费者消费的队列 */
+export const KG_GRAPH_QUEUE = 'kh.kg.graph.queue';
+
+/** 路由键：按文档 ID 异步抽取实体关系并构建图谱 */
+export const KG_RK_BUILD_BY_IDS = 'kg.graph.build.by_ids';
+
+/** 路由键：删除文档对应的知识图谱子图 */
+export const KG_RK_DELETE = 'kg.graph.delete';

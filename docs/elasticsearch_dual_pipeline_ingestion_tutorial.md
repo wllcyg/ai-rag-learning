@@ -69,7 +69,7 @@ sequenceDiagram
 
 | 对比维度 | 索引 1：`kh_chunk`（RAG 向量库） | 索引 2：`kh_document`（全文搜索库） |
 | :--- | :--- | :--- |
-| **管理者** | [`VectorIndexService`](file:///Users/moliang/Desktop/coder/ai-rag-learning/src/pipeline/vector-index.service.ts) | [`SearchIndexService`](file:///Users/moliang/Desktop/coder/ai-rag-learning/src/pipeline/search-index.service.ts) |
+| **管理者** | [`VectorIndexService`](../src/pipeline/vector-index.service.ts) | [`SearchIndexService`](../src/pipeline/search-index.service.ts) |
 | **数据粒度** | **段落级**（一篇长文档切为 8~20 个切片） | **整篇文档级**（一篇文档对应 1 条记录） |
 | **核心字段** | `embedding` (**1024 维密集向量**), `chunk_id`, `heading` | `title`, `summary`, `content`, `tags`, `categoryId` |
 | **索引技术** | **HNSW 近似最近邻图索引**（`similarity: cosine`） | **IK 中文分词倒排索引** |
@@ -80,7 +80,7 @@ sequenceDiagram
 ## 三、 阶段 1：底层基础设施与拓扑声明
 
 ### 1. RabbitMQ 双交换机与双队列拓扑
-* 代码文件：[`src/mq/rabbitmq.service.ts`](file:///Users/moliang/Desktop/coder/ai-rag-learning/src/mq/rabbitmq.service.ts#L168-L186)
+* 代码文件：[`src/mq/rabbitmq.service.ts`](../src/mq/rabbitmq.service.ts#L168-L186)
 * 在服务启动或断网重连时，通过 `assertTopology` 自动声明拓扑：
   ```typescript
   private async assertTopology(ch: ConfirmChannel) {
@@ -99,7 +99,7 @@ sequenceDiagram
   ```
 
 ### 2. Elasticsearch 两张索引表自动初始化
-* **`kh_chunk` 初始化**（[`VectorIndexService.createIndexIfNotExists`](file:///Users/moliang/Desktop/coder/ai-rag-learning/src/pipeline/vector-index.service.ts#L130)）：
+* **`kh_chunk` 初始化**（[`VectorIndexService.createIndexIfNotExists`](../src/pipeline/vector-index.service.ts#L130)）：
   ```typescript
   mappings: {
     properties: {
@@ -116,7 +116,7 @@ sequenceDiagram
     },
   }
   ```
-* **`kh_document` 初始化**（[`SearchIndexService.ensureEsIndex`](file:///Users/moliang/Desktop/coder/ai-rag-learning/src/pipeline/search-index.service.ts#L86)）：
+* **`kh_document` 初始化**（[`SearchIndexService.ensureEsIndex`](../src/pipeline/search-index.service.ts#L86)）：
   ```typescript
   mappings: {
     properties: {
@@ -136,7 +136,7 @@ sequenceDiagram
 ## 四、 阶段 2：业务触发与异步发牌（Producer）
 
 ### 1. DocumentService 发布联动
-* 代码文件：[`src/document/document.service.ts`](file:///Users/moliang/Desktop/coder/ai-rag-learning/src/document/document.service.ts#L270-L289)
+* 代码文件：[`src/document/document.service.ts`](../src/document/document.service.ts#L270-L289)
 * 文档状态持久化后，异步触发发牌：
   ```typescript
   doc.status = DocumentStatus.Published;
@@ -149,7 +149,7 @@ sequenceDiagram
   ```
 
 ### 2. DocumentPipelinePublisher 双路并行投递
-* 代码文件：[`src/mq/document-pipeline.publisher.ts`](file:///Users/moliang/Desktop/coder/ai-rag-learning/src/mq/document-pipeline.publisher.ts#L28-L36)
+* 代码文件：[`src/mq/document-pipeline.publisher.ts`](../src/mq/document-pipeline.publisher.ts#L28-L36)
 ```typescript
 async afterPublish(document: DocumentEntity, content?: string | null) {
   await Promise.all([
@@ -163,7 +163,7 @@ async afterPublish(document: DocumentEntity, content?: string | null) {
 
 ## 五、 阶段 3：消费端监听与调度（Consumer）
 
-* 代码文件：[`src/mq/document-pipeline.consumer.ts`](file:///Users/moliang/Desktop/coder/ai-rag-learning/src/mq/document-pipeline.consumer.ts#L22-L55)
+* 代码文件：[`src/mq/document-pipeline.consumer.ts`](../src/mq/document-pipeline.consumer.ts#L22-L55)
 * 消费者在构造函数向 `RabbitMqService` 挂号，一旦队列有消息立刻反序列化并调起总调度器：
   ```typescript
   constructor(
@@ -179,7 +179,7 @@ async afterPublish(document: DocumentEntity, content?: string | null) {
 
 ## 六、 阶段 4：双管线核心落盘流水线（Orchestrator）
 
-代码文件：[`src/pipeline/pipeline.orchestrator.ts`](file:///Users/moliang/Desktop/coder/ai-rag-learning/src/pipeline/pipeline.orchestrator.ts)
+代码文件：[`src/pipeline/pipeline.orchestrator.ts`](../src/pipeline/pipeline.orchestrator.ts)
 
 ### 1. 管线 A：RAG 向量切片 4 步落盘流水线（面向 AI）
 
@@ -217,7 +217,7 @@ if (type === 'INDEX' && document) {
 ## 七、 阶段 5：生命周期对称闭环（下架与删除）
 
 当管理员下架或删除文档时：
-1. **触发入口**：[`DocumentService.remove(id)`](file:///Users/moliang/Desktop/coder/ai-rag-learning/src/document/document.service.ts#L295) ➔ 调 `pipelinePublisher.afterUnpublish(id)`。
+1. **触发入口**：[`DocumentService.remove(id)`](../src/document/document.service.ts#L295) ➔ 调 `pipelinePublisher.afterUnpublish(id)`。
 2. **双路下架**：
    * **RAG 侧**：发送 `DELETE_BY_DOC_IDS` ➔ 调 `vectorIndexService.deleteByDocId(id)` ➔ 清空 `kh_chunk` 中的所有向量切片。
    * **Search 侧**：发送 `DELETE` ➔ 调 `searchIndexService.deleteDocument(id)` ➔ 从 `kh_document` 物理删除整篇文档。

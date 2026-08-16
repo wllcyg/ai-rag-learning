@@ -2,6 +2,9 @@ import { Injectable, Logger } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { DocumentEntity } from '../document/entities/document.entity';
 import {
+  KG_GRAPH_EXCHANGE,
+  KG_RK_BUILD_BY_IDS,
+  KG_RK_DELETE,
   RAG_REINDEX_EXCHANGE,
   RAG_RK_BY_IDS,
   RAG_RK_DELETE,
@@ -9,14 +12,18 @@ import {
   SEARCH_RK_DELETE,
   SEARCH_RK_INDEX,
 } from './mq.constants';
-import { ReindexMessage, SearchIndexMessage } from './messages/pipeline.messages';
+import {
+  KgBuildMessage,
+  ReindexMessage,
+  SearchIndexMessage,
+} from './messages/pipeline.messages';
 import { RabbitMqService } from './rabbitmq.service';
 
 /**
  * 文档发布后的知识管线「生产者」
  *
- * <p>触发：RAG 向量化 + Search 全文索引。</p>
- * <p>采用 Claim Check 模式：MQ 只传轻量 ID，避免大包塞满消息队列。</p>
+ * <p>触发：RAG 向量化 + Search 全文索引 + KG 知识图谱建图。</p>
+ * <p>约定：投递失败只打日志，<b>不回滚</b>文档已发布状态。</p>
  */
 @Injectable()
 export class DocumentPipelinePublisher {
@@ -25,20 +32,22 @@ export class DocumentPipelinePublisher {
   constructor(private readonly rabbit: RabbitMqService) {}
 
   /**
-   * 发布成功后调用：并行投递 RAG / Search（仅传轻量 ID）。
+   * 发布成功后调用：并行投递 RAG / Search / KG。
    */
   async afterPublish(document: DocumentEntity) {
     await Promise.all([
       this.triggerRagReindex(document.id),
       this.triggerSearchIndex(document.id),
+      this.triggerKgBuild(document.id),
     ]);
   }
 
-  /** 归档/删除后：通知 RAG / Search 按文档 ID 清理索引 */
+  /** 归档/删除后：通知 RAG / Search / KG 按文档 ID 清理 */
   async afterUnpublish(documentId: string) {
     await Promise.all([
       this.triggerRagDelete(documentId),
       this.triggerSearchDelete(documentId),
+      this.triggerKgDelete(documentId),
     ]);
   }
 
@@ -68,7 +77,7 @@ export class DocumentPipelinePublisher {
     await this.rabbit.publish(RAG_REINDEX_EXCHANGE, RAG_RK_DELETE, message);
   }
 
-  /** Search：投递轻量文档 ID 索引消息 */
+  /** Search：按文档 ID 全量搜索索引 */
   private async triggerSearchIndex(documentId: string) {
     const message: SearchIndexMessage = {
       taskId: randomUUID(),
@@ -92,5 +101,31 @@ export class DocumentPipelinePublisher {
       documentId,
     };
     await this.rabbit.publish(SEARCH_INDEX_EXCHANGE, SEARCH_RK_DELETE, message);
+  }
+
+  /** KG：按文档 ID 建知识图谱 */
+  private async triggerKgBuild(documentId: string) {
+    const message: KgBuildMessage = {
+      taskId: randomUUID(),
+      type: 'BUILD_BY_DOC_IDS',
+      documentIds: [documentId],
+    };
+    const ok = await this.rabbit.publish(
+      KG_GRAPH_EXCHANGE,
+      KG_RK_BUILD_BY_IDS,
+      message,
+    );
+    this.logger.log(
+      `KG 建图${ok ? '已投递' : '投递失败'}：documentId=${documentId}, taskId=${message.taskId}`,
+    );
+  }
+
+  private async triggerKgDelete(documentId: string) {
+    const message: KgBuildMessage = {
+      taskId: randomUUID(),
+      type: 'DELETE_BY_DOC_IDS',
+      documentIds: [documentId],
+    };
+    await this.rabbit.publish(KG_GRAPH_EXCHANGE, KG_RK_DELETE, message);
   }
 }

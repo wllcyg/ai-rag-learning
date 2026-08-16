@@ -19,10 +19,10 @@
 ## 一、 当前实现方案（快照直投模式）
 
 目前系统的实现逻辑如下：
-1. **生产者（[`DocumentPipelinePublisher`](file:///Users/moliang/Desktop/coder/ai-rag-learning/src/mq/document-pipeline.publisher.ts)）**：
+1. **生产者（[`DocumentPipelinePublisher`](../src/mq/document-pipeline.publisher.ts)）**：
    * 发布文档时，截取 Markdown 正文的前 **1000 字符**（`contentPreview`），与元数据一同组装成快照放到 `SearchIndexMessage` 消息体中；
    * 发送到 RabbitMQ 交换机 `search.index.exchange`（路由键：`search.index.document`）。
-2. **消费者（[`DocumentPipelineConsumer`](file:///Users/moliang/Desktop/coder/ai-rag-learning/src/mq/document-pipeline.consumer.ts)）**：
+2. **消费者（[`DocumentPipelineConsumer`](../src/mq/document-pipeline.consumer.ts)）**：
    * 收到消息后直接把消息体里的快照写入 Elasticsearch `kh_document`（零查库）。
 
 ---

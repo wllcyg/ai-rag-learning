@@ -15,3 +15,12 @@ export interface SearchIndexMessage {
   type: SearchIndexType;
   documentId: string;
 }
+
+/** KG 知识图谱构建消息 */
+export type KgBuildType = 'BUILD_BY_DOC_IDS' | 'DELETE_BY_DOC_IDS';
+
+export interface KgBuildMessage {
+  taskId: string;
+  type: KgBuildType;
+  documentIds?: string[];
+}

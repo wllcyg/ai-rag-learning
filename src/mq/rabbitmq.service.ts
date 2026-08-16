@@ -19,6 +19,10 @@ import {
   SEARCH_INDEX_QUEUE,
   SEARCH_RK_DELETE,
   SEARCH_RK_INDEX,
+  KG_GRAPH_EXCHANGE,
+  KG_GRAPH_QUEUE,
+  KG_RK_BUILD_BY_IDS,
+  KG_RK_DELETE,
 } from './mq.constants';
 
 export type MessageHandler = (msg: ConsumeMessage) => Promise<void> | void;
@@ -165,11 +169,13 @@ export class RabbitMqService implements OnModuleInit, OnModuleDestroy {
   }
 
   private async assertTopology(ch: ConfirmChannel) {
+    // 1. RAG 知识切片与向量化管线
     await ch.assertExchange(RAG_REINDEX_EXCHANGE, 'topic', { durable: true });
     await ch.assertQueue(RAG_REINDEX_QUEUE, { durable: true });
     await ch.bindQueue(RAG_REINDEX_QUEUE, RAG_REINDEX_EXCHANGE, RAG_RK_BY_IDS);
     await ch.bindQueue(RAG_REINDEX_QUEUE, RAG_REINDEX_EXCHANGE, RAG_RK_DELETE);
 
+    // 2. 文档级全文检索管线
     await ch.assertExchange(SEARCH_INDEX_EXCHANGE, 'topic', { durable: true });
     await ch.assertQueue(SEARCH_INDEX_QUEUE, { durable: true });
     await ch.bindQueue(
@@ -183,7 +189,21 @@ export class RabbitMqService implements OnModuleInit, OnModuleDestroy {
       SEARCH_RK_DELETE,
     );
 
-    this.logger.log('RabbitMQ 拓扑已声明（RAG + Search）');
+    // 3. KG 知识图谱构建管线
+    await ch.assertExchange(KG_GRAPH_EXCHANGE, 'topic', { durable: true });
+    await ch.assertQueue(KG_GRAPH_QUEUE, { durable: true });
+    await ch.bindQueue(
+      KG_GRAPH_QUEUE,
+      KG_GRAPH_EXCHANGE,
+      KG_RK_BUILD_BY_IDS,
+    );
+    await ch.bindQueue(
+      KG_GRAPH_QUEUE,
+      KG_GRAPH_EXCHANGE,
+      KG_RK_DELETE,
+    );
+
+    this.logger.log('RabbitMQ 拓扑已声明（RAG + Search + KG）');
   }
 
   private async bindConsumers(ch: ConfirmChannel) {

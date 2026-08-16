@@ -9,6 +9,8 @@ import { ChunkingService } from './chunking.service';
 import { EmbeddingService } from './embedding.service';
 import { VectorIndexService } from './vector-index.service';
 import { SearchIndexService } from './search-index.service';
+import { ExtractionService } from './extraction.service';
+import { GraphBuildService } from './graph-build.service';
 
 @Global()
 @Module({
@@ -23,6 +25,8 @@ import { SearchIndexService } from './search-index.service';
     EmbeddingService,
     VectorIndexService,
     SearchIndexService,
+    ExtractionService,
+    GraphBuildService,
   ],
   exports: [
     PipelineOrchestrator,
@@ -30,6 +34,8 @@ import { SearchIndexService } from './search-index.service';
     EmbeddingService,
     VectorIndexService,
     SearchIndexService,
+    ExtractionService,
+    GraphBuildService,
   ],
 })
 export class PipelineModule {}
