@@ -34,7 +34,7 @@ export class DocumentPipelinePublisher {
   /**
    * 发布成功后调用：并行投递 RAG / Search / KG。
    */
-  async afterPublish(document: DocumentEntity) {
+  async afterPublish(document: DocumentEntity, content?: string) {
     await Promise.all([
       this.triggerRagReindex(document.id),
       this.triggerSearchIndex(document.id),

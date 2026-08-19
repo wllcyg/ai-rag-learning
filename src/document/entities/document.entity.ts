@@ -6,11 +6,8 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 
-export enum DocumentStatus {
-  Draft = 0,
-  Published = 1,
-  Archived = 2,
-}
+import { DocumentStatus } from '../document.status';
+export { DocumentStatus } from '../document.status';
 
 @Entity({ name: 'kh_document' })
 export class DocumentEntity {

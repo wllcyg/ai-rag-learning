@@ -147,4 +147,14 @@ export class DocumentController {
   publish(@Param('id') id: string) {
     return this.documentService.publish(id);
   }
+
+  @Post(':id/archive')
+  archive(@Param('id') id: string) {
+    return this.documentService.archive(id);
+  }
+
+  @Post(':id/save-draft')
+  saveAsDraft(@Param('id') id: string) {
+    return this.documentService.saveAsDraft(id);
+  }
 }

@@ -6,6 +6,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { DocumentModule } from './document/document.module';
 import { DocumentEntity } from './document/entities/document.entity';
+import { DocumentReviewEntity } from './document/entities/document-review.entity';
 import { StorageModule } from './storage/storage.module';
 import { MqModule } from './mq/mq.module';
 
@@ -26,7 +27,7 @@ import { MqModule } from './mq/mq.module';
         username: configService.get<string>('POSTGRES_USER') ?? 'user',
         password: configService.get<string>('POSTGRES_PASSWORD') ?? '123456',
         database: configService.get<string>('POSTGRES_DB') ?? 'knowledge_hub',
-        entities: [DocumentEntity],
+        entities: [DocumentEntity, DocumentReviewEntity],
         synchronize: false,
       }),
     }),
